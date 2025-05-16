@@ -1,9 +1,11 @@
-use std::any::Any;
+mod csv_value;
+
+use crate::csv_value::CsvValue;
+use anyhow::Result;
+use clap::Parser;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::fs;
-use clap::Parser;
-use anyhow::Result;
-use serde_json::{json, Value};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -36,20 +38,13 @@ fn main() -> Result<()> {
     for result in reader.records() {
         let record = result?;
 
-        // FIXME: 値が全て文字型として登録されてしまう...
-        let mut data = HashMap::new();
-        // let mut data: HashMap<&String, Box<dyn Any>> = HashMap::new();
+        let mut data: HashMap<&String, CsvValue> = HashMap::new();
         for i in 0..=number_of_headers-1 {
-            data.insert(&headers[i], &record[i]);
-            // data.insert(&headers[i], Box::new(&record[i]));
+            data.insert(&headers[i], CsvValue::from_str(&record[i]));
         }
-        println!("data: {:?}", data);
-
         let json: Value = json!(data);
-        println!("json: {:?}", json);
 
         let validate_result = validator.validate(&json);
-
         if !validate_result.is_ok() {
             println!("record: {:?}", record);
             println!("error: {:?}", validate_result.err().unwrap());
