@@ -1,6 +1,12 @@
 # rs-csv-validator
 
-## About
+## Usage
+
+```bash
+rs-csv-validator --csv work/test.csv --schema work/test.json
+```
+
+## Config
 
 JSON Schema
 
@@ -35,10 +41,4 @@ CSV
 id,name,yes
 1,tom,true
 2,miki,false
-```
-
-Validation
-
-```bash
-rs-csv-validator --csv work/test.csv --schema work/test.json
 ```
