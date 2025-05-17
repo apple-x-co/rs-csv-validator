@@ -1,8 +1,16 @@
 use crate::csv_value::CsvValue;
 use anyhow::Result;
-use serde_json::{Value, json};
+use serde::Serialize;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::fs;
+
+#[derive(Debug, Serialize)]
+struct CsvError {
+    line: usize,
+    column: String,
+    error: String,
+}
 
 pub fn validate(schema_path: &String, csv_path: &String) -> Result<()> {
     let schema_reader = fs::File::open(schema_path)?;
@@ -13,6 +21,9 @@ pub fn validate(schema_path: &String, csv_path: &String) -> Result<()> {
     let headers: Vec<String> = reader.headers()?.iter().map(|h| h.to_string()).collect();
     let number_of_headers = headers.len();
 
+    // let mut errors: Vec<HashMap<&str, String>> = Vec::new();
+    let mut errors: Vec<CsvError> = Vec::new();
+
     for (i, result) in reader.records().enumerate() {
         let record = result?;
 
@@ -22,17 +33,19 @@ pub fn validate(schema_path: &String, csv_path: &String) -> Result<()> {
         }
         let json: Value = json!(data);
 
-        // TODO: エラー JSON にする
-
         let result = validator.validate(&json);
         if let Some(err) = result.err() {
-            eprintln!(
-                "line:{}, colum:{}, error:{}",
-                i + 1,
-                &err.instance_path.to_string()[1..],
-                err.to_string()
-            );
+            errors.push(CsvError {
+                line: i + 1,
+                column: err.instance_path.to_string()[1..].to_string(),
+                error: err.to_string(),
+            });
         }
+    }
+
+    if errors.len() > 0 {
+        let errors_json = json!(errors);
+        eprintln!("{}", errors_json.to_string());
     }
 
     Ok(())
